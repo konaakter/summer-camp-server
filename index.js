@@ -68,6 +68,20 @@ async function run() {
       next();
     }
 
+    /************************************************instractor************ */
+    const verifyInstractor = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email }
+      const user = await userCollection.findOne(query);
+      if (user?.role !== 'instractor') {
+        return res.status(403).send({ error: true, message: 'forbidden message' });
+      }
+      next();
+    }
+     
+
+
+
     /////////////////////////////////*isadmin ba initractor anar jonno*/
     app.get('/users/admin/:email', verifyJWT, async (req, res) => {
       const email = req.params.email;
@@ -81,6 +95,22 @@ async function run() {
       const result = { admin: user?.role === 'admin' }
       res.send(result);
     })
+    /**************************************************isInstractor ar jonno ********   */
+
+    app.get('/users/instractor/:email', verifyJWT, async (req, res) => {
+      const email = req.params.email;
+
+      if (req.decoded.email !== email) {
+        return res.send({ instractor: false })
+      }
+
+      const query = { email: email }
+      const user = await userCollection.findOne(query);
+      const result = { instractor: user?.role === 'instractor' }
+      res.send(result);
+    })
+
+
 
 
     /////////////////////////////////////////////////////////////jwt authprovider ay disi jaita////////////////////////////j
@@ -122,6 +152,34 @@ async function run() {
       const result = await userCollection.updateOne(query, updateDoc);
       res.send(result);
     })
+
+    /*********************************instractor banar jonno************************************** */
+
+    app.patch('/users/instractor/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          role: 'instractor'
+        },
+      };
+      const result = await userCollection.updateOne(query, updateDoc);
+      res.send(result);
+    })
+    /**********************************************instractor dasbioad************************** */
+
+    app.post('/addclass',verifyJWT, verifyInstractor, async (req, res) => {
+      const iteam = req.body;
+      const addresult = await populerclasscollectoin.insertOne(iteam);
+      res.send(addresult);
+    })
+
+
+
+
+    /******************************************************************************************** */
+
+
 
     app.get('/allcllass', verifyJWT, verifyAdmin, async (req, res) => {
       const allclass = await populerclasscollectoin.find().toArray();
@@ -222,6 +280,8 @@ async function run() {
       const result = await sletedSCCollection.deleteOne(query);
       res.send(result);
     })
+
+    
 
     /**********************************************************payment */
     app.post('/create-payment-intent', verifyJWT, async (req, res) => {
