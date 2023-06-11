@@ -1,6 +1,8 @@
 const express = require('express')
 const app = express()
 const jwt = require('jsonwebtoken');
+const stripe = require('stripe')('sk_test_51NHTMaFypvNrd4o3uawYfdvmey5VbtKZsvdh2YjRNPji741GoD0cKvPK98puql8jC84wauM7923nIDDDOJcsBiGY00zbFRo2Ty')
+
 require('dotenv').config()
 const cors = require('cors')
 const port = process.env.PORT || 5000
@@ -52,6 +54,7 @@ async function run() {
     const populerclasscollectoin = client.db("summerdb").collection("populerclass");
     const userCollection = client.db("summerdb").collection("user");
     const sletedSCCollection = client.db("summerdb").collection("sletedclass");
+    const paymentCollection = client.db("summerdb").collection("payment");
 
 
     /*************************************variry alluser moto router gulate dite hode */
@@ -218,7 +221,49 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const result = await sletedSCCollection.deleteOne(query);
       res.send(result);
-  })
+    })
+
+    /**********************************************************payment */
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const { price } = req.body
+      console.log(price)
+      
+      if (!price) return
+        const amount = parseFloat(price) * 100
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: 'usd',
+        payment_method_types: ['card'],
+      })
+
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      })
+    })
+
+
+    app.post('/payments', verifyJWT, async (req, res) => {
+      const payment = req.body;
+      const id = payment.sleted_id;
+      const query = { _id: new ObjectId(id) };
+      const deleteresult = await sletedSCCollection.deleteOne(query);
+
+      const insertResult = await paymentCollection .insertOne(payment);
+      await  populerclasscollectoin .updateOne({}, { $inc: { bookSeats: 1 } });
+      
+      res.send({ insertResult, deleteresult });
+    })
+
+    app.get('/payments', async (req, res) => {
+      console.log(req.query.email)
+
+      let query = {};
+      if (req.query?.email) {
+        query = { email: req.query.email }
+      }
+      const result = await paymentCollection.find(query).toArray();
+      res.send(result)
+    });
 
 
 
