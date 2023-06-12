@@ -174,6 +174,34 @@ async function run() {
       res.send(addresult);
     })
 
+    app.get('/addclass',verifyJWT, verifyInstractor, async (req, res) => {
+      console.log(req.query.email     )
+
+      let query = {};
+      if (req.query?.email) {
+        query = { instructorEmail : req.query.email}
+      }
+      const result = await  populerclasscollectoin.find(query).toArray();
+      res.send(result)
+    });
+
+    app.patch('/addclas/:id', async (req, res) => {
+      const updatedClass = req.body;
+      const id = req.params.id;
+      console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: {
+          artCraftName: updatedClass.artCraftName,
+          price:  updatedClass.price,
+          totalSeats: updatedClass.totalSeats
+        },
+      };
+      
+      const result = await populerclasscollectoin.updateOne(query, updateDoc);
+      res.send(result);
+    })
+
 
 
 
