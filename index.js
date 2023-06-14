@@ -78,7 +78,7 @@ async function run() {
       }
       next();
     }
-     
+
 
 
 
@@ -168,20 +168,20 @@ async function run() {
     })
     /**********************************************instractor dasbioad************************** */
 
-    app.post('/addclass',verifyJWT, verifyInstractor, async (req, res) => {
+    app.post('/addclass', verifyJWT, verifyInstractor, async (req, res) => {
       const iteam = req.body;
       const addresult = await populerclasscollectoin.insertOne(iteam);
       res.send(addresult);
     })
 
-    app.get('/addclass',verifyJWT, verifyInstractor, async (req, res) => {
-      console.log(req.query.email     )
+    app.get('/addclass', verifyJWT, verifyInstractor, async (req, res) => {
+      console.log(req.query.email)
 
       let query = {};
       if (req.query?.email) {
-        query = { instructorEmail : req.query.email}
+        query = { instructorEmail: req.query.email }
       }
-      const result = await  populerclasscollectoin.find(query).toArray();
+      const result = await populerclasscollectoin.find(query).toArray();
       res.send(result)
     });
 
@@ -193,16 +193,22 @@ async function run() {
       const updateDoc = {
         $set: {
           artCraftName: updatedClass.artCraftName,
-          price:  updatedClass.price,
+          price: updatedClass.price,
           totalSeats: updatedClass.totalSeats
         },
       };
-      
+
       const result = await populerclasscollectoin.updateOne(query, updateDoc);
       res.send(result);
     })
 
-
+    app.get('/addclass/:id', async (req, res) => {
+      const id = req.params.id
+      console.log(id)
+      const query = { _id: new ObjectId(id) };
+      const cursor = await populerclasscollectoin.findOne(query);
+      res.send(cursor);
+    })
 
 
     /******************************************************************************************** */
@@ -274,6 +280,21 @@ async function run() {
       const result = await populerclass.limit(6).toArray();
       res.send(result);
     })
+
+
+    app.get('/topinstractor', async (req, res) => {
+      const query = { role: "instractor" };
+      const populerinctrotor = await userCollection.find(query).limit(6).toArray();
+      
+      res.send(populerinctrotor);
+    })
+    app.get('/topinstractor', async (req, res) => {
+      const query = { role: "instractor" };
+      const populerinctrotor = await userCollection.find(query).toArray();
+      
+      res.send(populerinctrotor);
+    })
+
     /******************************************************************************************************* */
     /************************************************************************Allclass page****** */
     app.get('/approveclass', async (req, res) => {
@@ -309,15 +330,15 @@ async function run() {
       res.send(result);
     })
 
-    
+
 
     /**********************************************************payment */
     app.post('/create-payment-intent', verifyJWT, async (req, res) => {
       const { price } = req.body
       console.log(price)
-      
+
       if (!price) return
-        const amount = parseFloat(price) * 100
+      const amount = parseFloat(price) * 100
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: 'usd',
@@ -336,9 +357,9 @@ async function run() {
       const query = { _id: new ObjectId(id) };
       const deleteresult = await sletedSCCollection.deleteOne(query);
 
-      const insertResult = await paymentCollection .insertOne(payment);
-      await  populerclasscollectoin .updateOne({}, { $inc: { bookSeats: 1 } });
-      
+      const insertResult = await paymentCollection.insertOne(payment);
+      await populerclasscollectoin.updateOne({}, { $inc: { bookSeats: 1 } });
+
       res.send({ insertResult, deleteresult });
     })
 
@@ -349,7 +370,12 @@ async function run() {
       if (req.query?.email) {
         query = { email: req.query.email }
       }
-      const result = await paymentCollection.find(query).toArray();
+      const options = {
+
+        sort: { date: -1 },
+
+      };
+      const result = await paymentCollection.find(query, options).toArray();
       res.send(result)
     });
 
